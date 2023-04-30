@@ -3,8 +3,11 @@ import React, {useEffect, useState} from 'react'
 import Nota from './componentes/Nota'
 // serviio con la logica para las peticiones http
 import noteServices from './services/notas'
+import loginServices from './services/login'
 import Notification from './componentes/Notification'
 import Footer from './componentes/Footer'
+import NoteForm from './componentes/NoteForm'
+import LoginForm from './componentes/LoginForm'
 
 const App = () => {
 
@@ -15,6 +18,7 @@ const App = () => {
 
   const [ username, setUsername ] = useState('')
   const [ password, setPassword ] = useState('')
+  const [ user, setUser ]= useState(null)
 
   useEffect(()=>{
     noteServices.getAll().then((respuesta) => {
@@ -27,19 +31,28 @@ const App = () => {
     ? notes 
     : notes.filter(nota => nota.important)
 
-
-  const handeSubmit = (event) => {
+  // Manejo de Submit de formulario de LOGIN
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    console.log(`Usuario: ${event.target[0].value}`)
-    console.log(`Password: ${event.target[1].value}`)
+    try {
+      const userReturned = await loginServices.login({username, password})
+      noteServices.setNewToken(userReturned.token)
+      setUser(userReturned)
+      setUsername('')
+      setPassword('')
+    } catch (error) {
+      setErrorMessage('Wrong credentials!!!')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 3000);
+    }
   }
-
   const handleNoteChange = (e) => {
     setNewNote(e.target.value)
   }
 
+  // Crear una nueva nota
   const addNote = (e) => {
-
     e.preventDefault()
     const noteObject = {
       // id: notes.length + 1,
@@ -47,32 +60,24 @@ const App = () => {
       date: new Date().toISOString(),
       important: Math.random()<.5,
     }
-
-    noteServices.create(noteObject).then(respuesta => {
+    noteServices.create(noteObject, user.token).then(respuesta => {
       setNotes(notes.concat(respuesta))
       setNewNote('')
     })
-
   }
 
+  // Modificar la importancia de una nota
   const toggleImportanceOf = (id) => {
     console.log(`modificar importancia de la nota: ${id}`)
     // encontramos y copiamos la nota en la lista de notas
     const noteToChange = notes.find(n => {
-      // console.log('id de nota: ', n.id)
-      // console.log('id request: ', id)
-      // n.id === id
-      //   ? console.log('COINCIDE')
-      //   : console.log('ERROR')
       return n.id===id
     })
-    // console.log('NOTE to change: ', noteToChange)
     
     // creamos la nota modificada a partir de la nota copiada
     // noteChanged es una copia modificada de noteToChange
     // Ya que la anterior es una referencia a un componente del array de ESTADO
     const noteChanged = {...noteToChange, important: !noteToChange.important}
-    // console.log('nota cambiada', noteChanged)
     
     // Tras el PUT, hacemo el setNotes con un MAP de notes
     // Si la id de cada nota es diferente de la ID de parametro, la nota se queda
@@ -93,35 +98,34 @@ const App = () => {
       })
   }
 
-
   return (
     <div>
       <h1>Notes</h1>
       <Notification message={errorMessage} />
 
-      <form onSubmit={handeSubmit}>
-        <div>
-          Nombre de usuario
-          <input
-            type='text'
-            value={username}
-            onChange={({target})=>{setUsername(target.value)}}
-            name='Username'
-          />
-        </div>
-        <div>
-          Contraseña
-          <input
-            type='password'
-            value={password}
-            onChange={({target})=>{setPassword(target.value)}}
-            name='Password'
-          />
-        </div>
-        <button type='submit'>login</button>
-
-
-      </form>
+      {
+        // !user && loginForm()
+        // user && noteForm()
+        user === null
+          // ? loginForm()
+          ? <LoginForm
+              handleSubmit={handleSubmit}
+              username={username}
+              password={password}
+              setPassword={setPassword}
+              setUsername={setUsername}
+            />
+          : <div>
+              <p>{user.name} logged-in</p>
+              {/* {noteForm()} */}
+              <NoteForm
+                addNote={addNote}
+                newNote={newNote}
+                setNewNote={setNewNote}
+              />
+            </div>  
+      } 
+    
 
       <button onClick={()=>setShowAll(!showAll)}>
         show {showAll ? 'important' : 'all'}
@@ -136,13 +140,6 @@ const App = () => {
       }
       </ul>
 
-      <form onSubmit={addNote}>
-        <input 
-          value={newNote}
-          onChange={handleNoteChange}
-        />
-        <button type="submit">save</button>
-      </form> 
       <Footer/>
     </div>
   )

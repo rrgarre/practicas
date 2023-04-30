@@ -2,14 +2,26 @@ import axios from 'axios'
 
 const baseUrl = 'http://localhost:3001/api/notes'
 // const baseUrl = 'http://api.garredev.online:3001/api/notes'
+let token
+
+const setNewToken = (newToken) => {
+  token = 'Bearer ' + newToken
+}
 
 
 const getAll = () => {
   return axios.get(baseUrl).then(respuesta => respuesta.data)
 }
 
-const create = nuevaNota => {
-  return axios.post(baseUrl, nuevaNota).then(respuesta => respuesta.data)
+const create = async (nuevaNota) => {
+  const config = {
+    headers: {
+      Authorization: token 
+    }
+  }
+  // return axios.post(baseUrl, nuevaNota, config).then(respuesta => respuesta.data)
+  const response = await axios.post(baseUrl, nuevaNota, config)
+  return response.data
 }
 
 const update = (id, nuevaNota) => {
@@ -20,17 +32,5 @@ const update = (id, nuevaNota) => {
   return axios.put(`${baseUrl}/${id}`, nuevaNota).then(respuesta => respuesta.data)
 }
 
-// export default {
-//   getAll : getAll,
-//   create : create, 
-//   update : update
-// }
-// Al ser mismos nombres las claves y las variables, podemos compactar
-// export default {
-//   getAll,
-//   create, 
-//   update
-// }
-// Y asu vez
-export default {getAll, create, update}
+export default {setNewToken, getAll, create, update}
 // Esto es una propiedad del nuevo JS para crear objetos a partir de variables
