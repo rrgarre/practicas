@@ -107,7 +107,6 @@ const App = () => {
         // !user && loginForm()
         // user && noteForm()
         user === null
-          // ? loginForm()
           ? <LoginForm
               handleSubmit={handleSubmit}
               username={username}
@@ -117,7 +116,6 @@ const App = () => {
             />
           : <div>
               <p>{user.name} logged-in</p>
-              {/* {noteForm()} */}
               <NoteForm
                 addNote={addNote}
                 newNote={newNote}
@@ -126,20 +124,17 @@ const App = () => {
             </div>  
       } 
     
-
       <button onClick={()=>setShowAll(!showAll)}>
         show {showAll ? 'important' : 'all'}
       </button>
       <ul>
       {
         notesToShow.map((note) => {
-            // console.log(note._id)
             return <Nota key={note.id} note={note} toggleImp={() => toggleImportanceOf(note.id)}/>
           }
         )
       }
       </ul>
-
       <Footer/>
     </div>
   )
