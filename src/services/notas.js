@@ -13,13 +13,13 @@ const getAll = () => {
   return axios.get(baseUrl).then(respuesta => respuesta.data)
 }
 
+
 const create = async (nuevaNota) => {
   const config = {
     headers: {
       Authorization: token 
     }
   }
-  // return axios.post(baseUrl, nuevaNota, config).then(respuesta => respuesta.data)
   const response = await axios.post(baseUrl, nuevaNota, config)
   return response.data
 }

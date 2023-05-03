@@ -6,6 +6,7 @@ import noteServices from './services/notas'
 import loginServices from './services/login'
 import Notification from './componentes/Notification'
 import Footer from './componentes/Footer'
+import LogOutButton from './componentes/LogOutButton'
 import NoteForm from './componentes/NoteForm'
 import LoginForm from './componentes/LoginForm'
 
@@ -26,6 +27,23 @@ const App = () => {
       setNotes(respuesta)
     })
   }, [])
+  useEffect(()=>{
+    const userLoggedJSON = window.localStorage.getItem('userLogged')
+    // console.log('usuario: ', userLoggedJSON)
+    if(userLoggedJSON){
+      const userLogged = JSON.parse(userLoggedJSON)
+      loginServices.validToken(userLogged.token).then((response)=>{
+        console.log('RESPUESTA: ', response.status)
+        setUser(userLogged)
+        noteServices.setNewToken(userLogged.token)
+      }).catch(error=>{
+        console.log('RESPUESTA: ', error.response.status)
+        window.localStorage.clear()
+        setUser(null)
+      })
+      
+    }
+  }, [])
 
   const notesToShow = showAll 
     ? notes 
@@ -36,11 +54,13 @@ const App = () => {
     event.preventDefault()
     try {
       const userReturned = await loginServices.login({username, password})
+      window.localStorage.setItem('userLogged', JSON.stringify(userReturned))
       noteServices.setNewToken(userReturned.token)
       setUser(userReturned)
       setUsername('')
       setPassword('')
     } catch (error) {
+      // console.log('ERROR desde login service')
       setErrorMessage('Wrong credentials!!!')
       setTimeout(() => {
         setErrorMessage(null)
@@ -52,18 +72,41 @@ const App = () => {
   }
 
   // Crear una nueva nota
-  const addNote = (e) => {
+  const addNote = async (e) => {
     e.preventDefault()
     const noteObject = {
-      // id: notes.length + 1,
       content: newNote,
       date: new Date().toISOString(),
       important: Math.random()<.5,
     }
-    noteServices.create(noteObject, user.token).then(respuesta => {
+  
+    try {
+      const respuesta = await noteServices.create(noteObject)
+      console.log('Creando nota: ', respuesta)
       setNotes(notes.concat(respuesta))
       setNewNote('')
-    })
+      // noteServices.create(noteObject).then(response=>{
+      //   console.log('Creando nota: ', response)
+      //   setNotes(notes.concat(response))
+      //   setNewNote('')
+      // })
+    } catch (error) {
+      console.log('ERROR desde crear Nota service', error.response.data)
+      if(error.response.data.error === 'Token expired. Log again!'){
+        window.localStorage.clear()
+        setUser(null)
+        setErrorMessage('Sesión expirada')
+        setTimeout(() => {
+        setErrorMessage(null)
+        setNewNote('')
+      }, 3000);
+        return
+      }
+      setErrorMessage('Nota imposible de crear')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 3000);
+    }
   }
 
   // Modificar la importancia de una nota
@@ -115,7 +158,8 @@ const App = () => {
               setUsername={setUsername}
             />
           : <div>
-              <p>{user.name} logged-in</p>
+              {/* <p>{user.name} logged-in <LogOutButton name={user.name}/></p> */}
+              <LogOutButton name={user.name} setUser={setUser}/>
               <NoteForm
                 addNote={addNote}
                 newNote={newNote}
