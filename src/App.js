@@ -29,7 +29,6 @@ const App = () => {
   }, [])
   useEffect(()=>{
     const userLoggedJSON = window.localStorage.getItem('userLogged')
-    // console.log('usuario: ', userLoggedJSON)
     if(userLoggedJSON){
       const userLogged = JSON.parse(userLoggedJSON)
       loginServices.validToken(userLogged.token).then((response)=>{
@@ -60,7 +59,6 @@ const App = () => {
       setUsername('')
       setPassword('')
     } catch (error) {
-      // console.log('ERROR desde login service')
       setErrorMessage('Wrong credentials!!!')
       setTimeout(() => {
         setErrorMessage(null)
@@ -85,11 +83,6 @@ const App = () => {
       console.log('Creando nota: ', respuesta)
       setNotes(notes.concat(respuesta))
       setNewNote('')
-      // noteServices.create(noteObject).then(response=>{
-      //   console.log('Creando nota: ', response)
-      //   setNotes(notes.concat(response))
-      //   setNewNote('')
-      // })
     } catch (error) {
       console.log('ERROR desde crear Nota service', error.response.data)
       if(error.response.data.error === 'Token expired. Log again!'){
@@ -158,7 +151,6 @@ const App = () => {
               setUsername={setUsername}
             />
           : <div>
-              {/* <p>{user.name} logged-in <LogOutButton name={user.name}/></p> */}
               <LogOutButton name={user.name} setUser={setUser}/>
               <NoteForm
                 addNote={addNote}
