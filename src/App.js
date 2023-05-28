@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import Nota from './componentes/Nota'
 // servicio con la logica para las peticiones http
 import noteServices from './services/notas'
@@ -15,8 +15,8 @@ const App = () => {
   const [ notes, setNotes ] = useState([])
   const [ showAll, setShowAll ] = useState(true)
   const [ errorMessage, setErrorMessage] = useState(null)
-
   const [ user, setUser ]= useState(null)
+  const notesFormRef = useRef()
 
   useEffect(()=>{
     noteServices.getAll().then((respuesta) => {
@@ -44,6 +44,31 @@ const App = () => {
     ? notes 
     : notes.filter(nota => nota.important)
 
+
+  // Crear una nueva nota
+  const addNote = async (noteObject) => {
+    try {
+      const respuesta = await noteServices.create(noteObject)
+      console.log('Creando nota: ', respuesta)
+      setNotes(notes.concat(respuesta))
+      notesFormRef.current.toggleVisibility()
+    } catch (error) {
+      console.log('ERROR desde crear Nota service', error.response.data)
+      if(error.response.data.error === 'Token expired. Log again!'){
+        window.localStorage.clear()
+        setUser(null)
+        setErrorMessage('Sesión expirada')
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 3000);
+        return
+      }
+      setErrorMessage('Nota imposible de crear')
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 3000);
+    }
+  }
 
   // Modificar la importancia de una nota
   const toggleImportanceOf = (id) => {
@@ -81,23 +106,29 @@ const App = () => {
     <div>
       <h1>Notes</h1>
       <Notification message={errorMessage} />
-
       {
         user === null
-          ? <Toggable buttonLabel={'show login'}>
-              <LoginForm
-                setUser={setUser}
-                setErrorMessage={setErrorMessage}
-              />
-            </Toggable> 
+          ? <div>
+              <Toggable buttonLabel={'show login'}>
+                <LoginForm
+                  setUser={setUser}
+                  setErrorMessage={setErrorMessage}
+                />
+              </Toggable>
+              <hr></hr>
+            </div> 
           : <div>
               <LogOutButton name={user.name} setUser={setUser}/>
-              <NoteForm
-                notes={notes}
-                setNotes={setNotes}
-                setUser={setUser}
-                setErrorMessage={setErrorMessage}
-              />
+              <Toggable buttonLabel={'create note'} ref={notesFormRef}>
+                <NoteForm
+                  addNote={addNote}
+                  // notes={notes}
+                  // setNotes={setNotes}
+                  // setUser={setUser}
+                  // setErrorMessage={setErrorMessage}
+                />
+              </Toggable>
+              <hr></hr>
             </div>  
       } 
     
